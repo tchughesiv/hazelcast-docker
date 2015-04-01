@@ -6,7 +6,7 @@ ENV HZ_HOME /opt/hazelcast/
 RUN mkdir -p $HZ_HOME
 WORKDIR $HZ_HOME
 # Download hazelcast jars from maven repo.
-ADD https://repo1.maven.org/maven2/com/hazelcast/hazelcast/$HZ_VERSION/hazelcast-$HZ_VERSION.jar $HZ_HOME
+ADD https://repository-hazelcast-l337.forge.cloudbees.com/release/com/hazelcast/hazelcast-enterprise/$HZ_VERSION/hazelcast-enterprise-$HZ_VERSION.jar $HZ_HOME 
 # Start hazelcast standalone server.
-CMD java -server -cp $HZ_HOME/hazelcast-$HZ_VERSION.jar com.hazelcast.core.server.StartServer
+CMD java -server -cp $HZ_HOME/hazelcast-enterprise-$HZ_VERSION.jar -Dhazelcast.enterprise.license.key=$HZ_LICENSE_KEY com.hazelcast.core.server.StartServer
 
