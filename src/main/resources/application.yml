@@ -1,0 +1,11 @@
+eureka:
+  instance:
+    appname: hazelcast-cluster
+    nonSecurePort: 5701
+    hostname: ${HOSTNAME}
+    ipAddress: ${HOST_IP}
+    metadataMap:
+      instanceId: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+  client:
+    serviceUrl:
+      defaultZone: ${EUREKA_URL}
