@@ -8,13 +8,13 @@ This repo contains docker image for [Hazelcast](http://hazelcast.org) open-sourc
 You need to pull hazelcast docker image from Docker registry via command below : 
 
 ```
-docker pull hazelcast/hazelcast
+docker pull hazelcast/hazelcast:enterprise-latest
 ```
 
 After that you should be able to run Hazelcast docker image by : 
 
 ```
-docker run -ti -e HZ_LICENSE_KEY=YOUR_LICENSE_KEY hazelcast/hazelcast
+docker run -ti -e HZ_LICENSE_KEY=YOUR_LICENSE_KEY hazelcast/hazelcast:enterprise-latest
 ```
 
 # Custom configuration
