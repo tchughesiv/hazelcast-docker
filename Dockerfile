@@ -1,10 +1,10 @@
 FROM java:7
-ENV HZ_VERSION 3.4.2
+ENV HZ_VERSION 3.5
 ENV HZ_HOME /opt/hazelcast/
 RUN mkdir -p $HZ_HOME
 WORKDIR $HZ_HOME
 # Download hazelcast jars from maven repo.
-ADD https://repo1.maven.org/maven2/com/hazelcast/hazelcast/$HZ_VERSION/hazelcast-$HZ_VERSION.jar $HZ_HOME
-# Start hazelcast standalone server.
-CMD java -server -cp hazelcast-$HZ_VERSION.jar com.hazelcast.core.server.StartServer
-
+ADD http://download.hazelcast.com/download.jsp?version=hazelcast-$HZ_VERSION&p=docker $HZ_HOME/hazelcast.zip
+RUN unzip hazelcast.zip
+WORKDIR $HZ_HOME/hazelcast-$HZ_VERSION/mancenter
+CMD sh startManCenter.sh
