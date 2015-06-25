@@ -14,7 +14,7 @@ docker pull hazelcast/hazelcast
 After that you should be able to run Hazelcast docker image by : 
 
 ```
-docker run -ti hazelcast/hazelcast
+docker run -ti -e HZ_LICENSE_KEY=YOUR_LICENSE_KEY hazelcast/hazelcast
 ```
 
 # Custom configuration
