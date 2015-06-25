@@ -1,9 +1,11 @@
 FROM java:7
-ENV HZ_VERSION 3.4.2
+ENV HZ_VERSION 3.5
 ENV HZ_HOME /opt/hazelcast/
 RUN mkdir -p $HZ_HOME
 WORKDIR $HZ_HOME
-# Download hazelcast jars from enterprise repo.
-ADD https://repository-hazelcast-l337.forge.cloudbees.com/release/com/hazelcast/hazelcast-enterprise/$HZ_VERSION/hazelcast-enterprise-$HZ_VERSION.jar $HZ_HOME 
+# Download hazelcast jars from maven repo.
+ADD http://download.hazelcast.com/enterprise/hazelcast-enterprise-$HZ_VERSION.zip $HZ_HOME/hazelcast.zip
+RUN unzip hazelcast.zip
 # Start hazelcast standalone server.
-CMD java -server -cp hazelcast-enterprise-$HZ_VERSION.jar -Dhazelcast.enterprise.license.key=$HZ_LICENSE_KEY com.hazelcast.core.server.StartServer
+WORKDIR $HZ_HOME/hazelcast-enterprise-$HZ_VERSION
+CMD java -server -Djava.net.preferIPv4Stack=true -Dhazelcast.enterprise.license.key=$HZ_LICENSE_KEY -cp lib/hazelcast-enterprise-all-$HZ_VERSION.jar com.hazelcast.console.ConsoleApp
