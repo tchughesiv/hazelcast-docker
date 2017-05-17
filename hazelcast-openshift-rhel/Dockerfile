@@ -32,6 +32,27 @@ RUN mkdir -p $HZ_HOME
 RUN mkdir -p $HZ_CP_MOUNT
 WORKDIR $HZ_HOME
 
+ADD hazelcast.xml $HZ_HOME/hazelcast.xml
+ADD start.sh $HZ_HOME/start.sh
+ADD stop.sh $HZ_HOME/stop.sh
+ADD liveness.sh $HZ_HOME/liveness.sh
+ADD readiness.sh $HZ_HOME/readiness.sh
+ADD uid_entrypoint $HZ_HOME/uid_entrypoint
+
+### Atomic Help File
+COPY README.md /tmp/
+
+RUN yum clean all && yum-config-manager --disable \* &> /dev/null && \
+### Add necessary Red Hat repos here
+    yum-config-manager --enable rhel-7-server-rpms,rhel-7-server-optional-rpms,rhel-7-server-thirdparty-oracle-java-rpms &> /dev/null && \
+    yum -y update-minimal --security --sec-severity=Important --sec-severity=Critical --setopt=tsflags=nodocs && \
+### Add your package needs to this installation line
+    yum -y install --setopt=tsflags=nodocs golang-github-cpuguy83-go-md2man java-1.8.0-oracle-devel && \
+### help markdown to man conversion
+    go-md2man -in /tmp/README.md -out /help.1 && \
+    yum -y remove golang-github-cpuguy83-go-md2man && \
+    yum -y clean all
+
 ### add hazelcast enterprise
 ADD ${REPOSITORY_URL}/release/com/hazelcast/hazelcast-enterprise-all/${HZ_VERSION}/hazelcast-enterprise-all-${HZ_VERSION}.jar $HZ_HOME
 
@@ -41,54 +62,31 @@ ADD https://repo1.maven.org/maven2/org/slf4j/jul-to-slf4j/1.7.12/jul-to-slf4j-1.
 ### Adding JCache
 ADD https://repo1.maven.org/maven2/javax/cache/cache-api/1.0.0/cache-api-1.0.0.jar $HZ_HOME
 
-ADD hazelcast.xml $HZ_HOME/hazelcast.xml
-ADD start.sh $HZ_HOME/start.sh
-ADD stop.sh $HZ_HOME/stop.sh
-ADD liveness.sh $HZ_HOME/liveness.sh
-ADD readiness.sh $HZ_HOME/readiness.sh
-
-### Atomic Help File
-COPY README.md /tmp/
-
-RUN yum clean all && \
-    yum-config-manager --disable \* && \
-### Add necessary Red Hat repos here
-    yum-config-manager repos --enable rhel-7-server-rpms && \
-    yum-config-manager repos --enable rhel-7-server-optional-rpms && \
-    yum-config-manager repos --enable rhel-7-server-thirdparty-oracle-java-rpms && \
-    yum -y update-minimal --security --sec-severity=Important --sec-severity=Critical --setopt=tsflags=nodocs && \
-### Install Oracle Java 8
-    yum -y install --setopt=tsflags=nodocs java-1.8.0-oracle-devel && \
-### help markdown to man conversion
-### Add your package needs to this installation line
-    yum -y install --setopt=tsflags=nodocs golang-github-cpuguy83-go-md2man && \
-    go-md2man -in /tmp/README.md -out /help.1 && \
-    yum -y remove golang-github-cpuguy83-go-md2man && \
-    yum -y clean all
+### Adding maven wrapper, downloading Hazelcast Kubernetes discovery plugin and dependencies and cleaning up
+COPY mvnw $HZ_HOME/mvnw
 
 ### Configure Hazelcast
 RUN useradd -l -u $USER_UID -r -g 0 -d $HZ_HOME -s /sbin/nologin -c "${USER_UID} application user" $USER_NAME
-RUN chown -R $USER_UID:0 $HZ_HOME
-RUN chown -R $USER_UID:0 $HZ_CP_MOUNT
-RUN chmod +x $HZ_HOME/start.sh
-RUN chmod +x $HZ_HOME/stop.sh
-RUN chmod +x $HZ_HOME/liveness.sh
-RUN chmod +x $HZ_HOME/readiness.sh
+RUN chown -R $USER_UID:0 $HZ_HOME $HZ_CP_MOUNT
+RUN chmod +x $HZ_HOME/*.sh $HZ_HOME/uid_entrypoint
+RUN chmod g+w /etc/passwd
 
-### Adding maven wrapper, downloading Hazelcast Kubernetes discovery plugin and dependencies and cleaning up
-COPY mvnw $HZ_HOME/mvnw
+### Switch to hazelcast user
+USER $USER_UID
 RUN cd mvnw && \
     chmod +x mvnw && \
     ./mvnw -f dependency-copy.xml -Dhazelcast-kubernetes-version=${HZ_KUBE_VERSION} dependency:copy-dependencies && \
     cd .. && \
     rm -rf $HZ_HOME/mvnw && \
-    rm -rf /root/.m2
-
-### Switch to default user
-USER $USER_UID
+    rm -rf $HZ_HOME/.m2 && \
+    chmod -R +r $HZ_HOME
 
 ### Expose port
 EXPOSE 5701
+
+### arbitrary uid recognition at runtime - for OpenShift deployments
+RUN sed "s@${USER_NAME}:x:${USER_UID}:@${USER_NAME}:x:\${USER_ID}:@g" /etc/passwd > $HZ_HOME/passwd.template
+ENTRYPOINT ["./uid_entrypoint"]
 
 ### Start hazelcast standalone server.
 CMD ["/bin/sh", "-c", "./start.sh"]
